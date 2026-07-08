@@ -1,0 +1,9 @@
+{
+  "TestData": {
+    "HospitalSearch": {
+      "City": "Bangalore",
+      "MinRating": 3.5,
+      "RequireOpen24Hours": true
+    }
+  }
+}
