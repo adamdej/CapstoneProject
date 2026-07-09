@@ -26,6 +26,9 @@ public class NegativeTests : BaseTest
             + $"{criteria.MaxRating}{(criteria.RequireOpen24Hours ? " and Open 24x7" : "")}");
     }
 
+    // Negative test: verifies the framework handles a nonexistent city gracefully
+    // (zero hospital cards found) rather than throwing an unhandled exception,
+    // using FindElements rather than the exception-throwing WaitForElement pattern.
     [Test]
     public void Invalid_NonexistantCityTest()
     {

@@ -61,4 +61,23 @@ public class HospitalSearchTests : BaseTest
         });
 
     }
+
+    // Data-driven test: verifies the city-URL navigation pattern generalizes
+    // across multiple cities, not just the one used in the main filter tests.
+    [TestCase("Bangalore")]
+    [TestCase("Mumbai")]
+    [TestCase("Delhi")]
+    public void SearchingMultipleCitiesResultsWithHospitals(string city)
+    {
+        // city will be "Bangalore" on run 1, "Mumbai" on run 2, etc.
+        var criteria = TestDataManager.Data.HospitalSearch;
+        LogManager.Logger.Information("Starting hospital search for {City}", city);
+
+        var homePage = new HomePage(Driver!);
+        var resultsPage = homePage.NavigateToHospitalsInCity(city);
+
+        Assert.That(resultsPage.IsDisplayed(), Is.True,
+           "Expected hospital listing cards to be visible for the requested city.");
+
+    }
 }
