@@ -3,7 +3,8 @@
     "HospitalSearch": {
       "City": "Bangalore",
       "MinRating": 3.5,
-      "RequireOpen24Hours": true
+      "RequireOpen24Hours": true,
+      "MaxRating": 4.9
     }
   }
 }

@@ -7,5 +7,6 @@ public class HospitalSearchCriteria
 {
     public string City { get; set; } = string.Empty;
     public double MinRating { get; set; }
+    public double MaxRating { get; set; }
     public bool RequireOpen24Hours { get; set; }
 }
