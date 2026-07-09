@@ -25,4 +25,17 @@ public class NegativeTests : BaseTest
             $"Expected no hospitals in {criteria.City} with rating < "
             + $"{criteria.MaxRating}{(criteria.RequireOpen24Hours ? " and Open 24x7" : "")}");
     }
+
+    [Test]
+    public void Invalid_NonexistantCityTest()
+    {
+        var criteria = TestDataManager.Data.HospitalSearch;
+        LogManager.Logger.Information("Starting hospital search for {City}", criteria.City);
+
+        var homePage = new HomePage(Driver!);
+        var resultsPage = homePage.NavigateToHospitalsInCity("Notarealcityxyz");
+
+        Assert.That(resultsPage.HasNoHospitalCards(), Is.True,
+            "Expected no hospital cards to be found for a nonexistent city.");
+    }
 }

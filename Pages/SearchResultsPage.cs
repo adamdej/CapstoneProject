@@ -62,6 +62,15 @@ public class SearchResultsPage : BasePage
         return new HomePage(Driver);
     }
 
+    // Returns true if no hospital cards are present — used for negative tests
+    // (e.g. invalid city) where the page loads but returns zero results.
+    // Uses FindElements (plural) rather than WaitForElement, since FindElements
+    // returns an empty list instead of throwing when nothing matches.
+    public bool HasNoHospitalCards()
+    {
+        return !Driver.FindElements(HospitalCardLocator).Any();
+    }
+
     private IReadOnlyList<IWebElement> GetCards()
     {
         WaitUtils.WaitForElement(Driver, HospitalCardLocator);
