@@ -15,7 +15,6 @@ public abstract class BaseTest
     public void SetUp()
     {
         LogManager.Initialise();
-        ExtentReportManager.Initialise();
         ExtentReportManager.CreateTest(TestContext.CurrentContext.Test.Name);
 
         Driver = DriverFactory.Create(
@@ -56,7 +55,6 @@ public abstract class BaseTest
         }
         finally
         {
-            ExtentReportManager.Flush();
             Driver?.Quit();
             Driver?.Dispose();
             LogManager.Dispose();
