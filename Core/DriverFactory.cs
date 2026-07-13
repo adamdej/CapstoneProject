@@ -24,9 +24,8 @@ public static class DriverFactory
         if (headless) options.AddArgument("--headless=new");
         options.AddArgument("--disable-notifications");
         options.AddArgument("--disable-features=PasswordLeakDetection");
-
-        // Blocks all cookies for the browser session (value 2 = block).
         options.AddUserProfilePreference("profile.default_content_setting_values.cookies", 2);
+        options.AddUserProfilePreference("profile.default_content_setting_values.popups", 1);
 
         return options;
     }
