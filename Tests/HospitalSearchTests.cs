@@ -1,7 +1,15 @@
 ﻿using NUnit.Framework;
 
+// Runs this ENTIRE class three times, once per browser, all in parallel
+// (via BaseTest's [Parallelizable(ParallelScope.Fixtures)]) — each instance
+// gets its own RemoteWebDriver session on a different Selenium Grid node.
+[TestFixture("chrome")]
+[TestFixture("firefox")]
+[TestFixture("edge")]
 public class HospitalSearchTests : BaseTest
 {
+    public HospitalSearchTests(string browser) : base(browser) { }
+
     [Test]
     public void BangaloreHospitalSearch_Open24HoursAndMinimumRating_ReturnsMatchingHospitals()
     {
@@ -59,7 +67,6 @@ public class HospitalSearchTests : BaseTest
                 "Names and ratings must stay aligned — one rating per hospital name.");
             Assert.That(ratings, Has.All.InRange(0.0, 5.0), "All ratings should be valid star ratings between 0 and 5.");
         });
-
     }
 
     // Data-driven test: verifies the city-URL navigation pattern generalizes
@@ -69,7 +76,6 @@ public class HospitalSearchTests : BaseTest
     [TestCase("Delhi")]
     public void SearchingMultipleCitiesResultsWithHospitals(string city)
     {
-        // city will be "Bangalore" on run 1, "Mumbai" on run 2, etc.
         var criteria = TestDataManager.Data.HospitalSearch;
         LogManager.Logger.Information("Starting hospital search for {City}", city);
 
@@ -78,6 +84,5 @@ public class HospitalSearchTests : BaseTest
 
         Assert.That(resultsPage.IsDisplayed(), Is.True,
            "Expected hospital listing cards to be visible for the requested city.");
-
     }
 }

@@ -10,6 +10,21 @@ using Allure.NUnit;
 public abstract class BaseTest
 {
     protected IWebDriver? Driver;
+    private readonly string? _browser;
+
+    // Default constructor: used by test classes that DON'T specify [TestFixture("browser")]
+    // — these fall back to whatever "Browser" is set to in appsettings.json, same as before.
+    protected BaseTest() { }
+
+    // Parameterized constructor: used by test classes decorated with
+    // [TestFixture("chrome")], [TestFixture("firefox")], [TestFixture("edge")] —
+    // NUnit creates one instance of the class per attribute, each with its own
+    // browser value, and (with [Parallelizable(ParallelScope.Fixtures)]) runs
+    // all of them concurrently.
+    protected BaseTest(string browser)
+    {
+        _browser = browser;
+    }
 
     [SetUp]
     public void SetUp()
@@ -17,16 +32,28 @@ public abstract class BaseTest
         LogManager.Initialise();
         ExtentReportManager.CreateTest(TestContext.CurrentContext.Test.Name);
 
+        var browserToUse = _browser ?? ConfigurationManager.Settings.Browser;
+
         Driver = DriverFactory.Create(
-            ConfigurationManager.Settings.Browser,
+            browserToUse,
             ConfigurationManager.Settings.Headless);
         DriverContext.Driver = Driver;
 
-        LogManager.Logger.Information("Browser launched, navigating to {Url}",
-            ConfigurationManager.Settings.BaseUrl);
-        ExtentReportManager.LogInfo("Browser launched and navigated to base URL");
-
         Driver.Navigate().GoToUrl(ConfigurationManager.Settings.BaseUrl);
+
+        LogManager.Logger.Information("Browser launched ({Browser}) and navigated to {Url}",
+            browserToUse, ConfigurationManager.Settings.BaseUrl);
+        ExtentReportManager.LogInfo($"Browser launched ({browserToUse}) and navigated to base URL");
+
+        // Dismiss any unexpected browser alert on load
+        try
+        {
+            Driver.SwitchTo().Alert().Accept();
+        }
+        catch (NoAlertPresentException)
+        {
+            // No alert present, continue
+        }
     }
 
     [TearDown]
@@ -45,8 +72,23 @@ public abstract class BaseTest
                     TestContext.CurrentContext.Test.Name);
 
                 TestContext.AddTestAttachment(path);
+                LogManager.Logger.Information("Screenshot saved to {Path}", path);
                 ExtentReportManager.LogFail("Test failed — screenshot captured");
+
                 AllureApi.AddAttachment("Screenshot", "image/png", path);
+
+                var projectRoot = Path.GetFullPath(Path.Combine(
+                    Directory.GetCurrentDirectory(), "..", "..", ".."));
+                var logPath = Path.Combine(
+                    projectRoot,
+                    ConfigurationManager.Settings.LogDirectory,
+                    $"test-log-{DateTime.Now:yyyyMMdd}.txt");
+                if (File.Exists(logPath))
+                {
+                    AllureApi.AddAttachment("Log", "text/plain",
+                        System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(logPath)),
+                        ".txt");
+                }
             }
             else
             {
