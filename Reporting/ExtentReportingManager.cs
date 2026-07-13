@@ -4,6 +4,8 @@ using AventStack.ExtentReports.Reporter;
 public static class ExtentReportManager
 {
     private static ExtentReports? _extent;
+
+    [ThreadStatic]
     private static ExtentTest? _test;
 
     public static void Initialise()
