@@ -1,0 +1,74 @@
+pipeline {
+    agent any
+
+    environment {
+        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        DOTNET_NOLOGO = '1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Configure for CI') {
+            steps {
+                dir('HospitalFinder.Selenium') {
+                    sh 'cp appsettings.ci.json appsettings.json'
+                }
+            }
+        }
+
+        stage('Restore') {
+            steps {
+                dir('HospitalFinder.Selenium') {
+                    sh 'dotnet restore'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                dir('HospitalFinder.Selenium') {
+                    sh 'dotnet build --no-restore'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('HospitalFinder.Selenium') {
+                    sh 'dotnet test --no-build --logger "trx;LogFileName=test-results.trx"'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            junit testResults: 'HospitalFinder.Selenium/**/test-results.trx', allowEmptyResults: true
+
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'HospitalFinder.Selenium/artifacts/extent',
+                reportFiles: 'extent-report.html',
+                reportName: 'Extent Report'
+            ])
+
+            archiveArtifacts artifacts: 'HospitalFinder.Selenium/artifacts/screenshots/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'HospitalFinder.Selenium/artifacts/logs/**', allowEmptyArchive: true
+
+            script {
+                if (fileExists('HospitalFinder.Selenium/bin/Debug/net8.0/allure-results')) {
+                    allure includeProperties: false,
+                        jdk: '',
+                        results: [[path: 'HospitalFinder.Selenium/bin/Debug/net8.0/allure-results']]
+                }
+            }
+        }
+    }
+}
