@@ -17,42 +17,37 @@ public class SearchResultsPage : BasePage
     // to bypass the check itself.
     private bool IsAkamaiChallengePage()
     {
-        return Driver.PageSource.Contains("Powered and protected by Akamai")
-            || Driver.PageSource.Contains("Processing your request");
+        return Driver.PageSource.Contains("Processing your request")
+            || Driver.PageSource.Contains("resubmit your request");
     }
 
-    // Checks the real hospital listing has loaded. If Akamai's challenge page
-    // is shown instead, waits 5 seconds (matching Akamai's own stated refresh
-    // guidance) and refreshes, up to maxRetries times, before giving up.
-    // A hard Thread.Sleep is used deliberately here rather than WebDriverWait,
-    // since Akamai's countdown needs real wall-clock time to elapse regardless
-    // of page/element state.
     public bool IsDisplayed(int maxRetries = 2)
     {
         for (int attempt = 0; attempt <= maxRetries; attempt++)
         {
-            if (IsAkamaiChallengePage())
-            {
-                LogManager.Logger.Warning(
-                    "Akamai challenge page detected, waiting 5s before refresh (attempt {Attempt}/{Max})",
-                    attempt + 1, maxRetries);
-                Thread.Sleep(5000);
-                Driver.Navigate().Refresh();
-                continue;
-            }
+            // Poll for up to ExplicitWaitSeconds, checking every 500ms for
+            // EITHER real content or an Akamai challenge — rather than waiting
+            // the full timeout blindly and only checking Akamai afterward.
+            var deadline = DateTime.UtcNow.AddSeconds(ConfigurationManager.Settings.ExplicitWaitSeconds);
 
-            try
+            while (DateTime.UtcNow < deadline)
             {
-                WaitUtils.WaitForElement(Driver, HospitalCardLocator);
-                return true;
-            }
-            catch (WebDriverTimeoutException)
-            {
+                if (Driver.FindElements(HospitalCardLocator).Count > 0)
+                {
+                    return true;
+                }
+
                 if (IsAkamaiChallengePage())
                 {
-                    continue; // loop will handle the refresh on the next pass
+                    LogManager.Logger.Warning(
+                        "Akamai challenge page detected, waiting 5s before refresh (attempt {Attempt}/{Max})",
+                        attempt + 1, maxRetries);
+                    Thread.Sleep(5000);
+                    Driver.Navigate().Refresh();
+                    break; // exit polling loop, go to next outer attempt
                 }
-                return false; // genuinely no cards — not an Akamai issue
+
+                Thread.Sleep(500);
             }
         }
 
