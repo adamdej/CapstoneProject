@@ -29,6 +29,12 @@ public abstract class BaseTest
     [SetUp]
     public void SetUp()
     {
+        var browserToUse = _browser ?? ConfigurationManager.Settings.Browser;
+
+        if (!ConfigurationManager.Settings.UseGrid && browserToUse.ToLowerInvariant() != "chrome")
+        {
+            Assert.Ignore($"{browserToUse} requires Selenium Grid (only Chrome is available for direct local/CI execution).");
+        }
         LogManager.Initialise();
         ExtentReportManager.CreateTest(TestContext.CurrentContext.Test.Name);
 
