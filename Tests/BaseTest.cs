@@ -85,9 +85,21 @@ public abstract class BaseTest
                     $"test-log-{DateTime.Now:yyyyMMdd}.txt");
                 if (File.Exists(logPath))
                 {
-                    AllureApi.AddAttachment("Log", "text/plain",
-                        System.Text.Encoding.UTF8.GetBytes(File.ReadAllText(logPath)),
-                        ".txt");
+                    try
+                    {
+                        using var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var reader = new StreamReader(stream);
+                        var logContent = reader.ReadToEnd();
+
+                        AllureApi.AddAttachment("Log", "text/plain",
+                            System.Text.Encoding.UTF8.GetBytes(logContent),
+                            ".txt");
+                    }
+                    catch (IOException)
+                    {
+                        // Log file was locked by another parallel test at the moment of read.
+                        // Non-critical — the screenshot and test failure are still captured.
+                    }
                 }
             }
             else
