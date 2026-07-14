@@ -51,6 +51,12 @@ public class SearchResultsPage : BasePage
             }
         }
 
+        var frameCount = Driver.FindElements(By.TagName("iframe")).Count;
+        var sourceSnippet = Driver.PageSource.Length > 500 ? Driver.PageSource.Substring(0, 500) : Driver.PageSource;
+        LogManager.Logger.Warning("DIAGNOSTIC: iframe count = {FrameCount}. PageSource length = {Length}. First 500 chars: {Snippet}",
+            frameCount, Driver.PageSource.Length, sourceSnippet);
+
+
         return false;
     }
 
