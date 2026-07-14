@@ -10,7 +10,54 @@ public class SearchResultsPage : BasePage
 
     public SearchResultsPage(IWebDriver driver) : base(driver) { }
 
-    public bool IsDisplayed() => WaitUtils.WaitForElement(Driver, HospitalCardLocator) != null;
+    // Detects Akamai's bot-management challenge page specifically, as opposed
+    // to the real page just still loading. Akamai's own page text says "If
+    // this page doesn't refresh automatically, resubmit your request" — this
+    // method follows that instruction programmatically rather than attempting
+    // to bypass the check itself.
+    private bool IsAkamaiChallengePage()
+    {
+        return Driver.PageSource.Contains("Powered and protected by Akamai")
+            || Driver.PageSource.Contains("Processing your request");
+    }
+
+    // Checks the real hospital listing has loaded. If Akamai's challenge page
+    // is shown instead, waits 5 seconds (matching Akamai's own stated refresh
+    // guidance) and refreshes, up to maxRetries times, before giving up.
+    // A hard Thread.Sleep is used deliberately here rather than WebDriverWait,
+    // since Akamai's countdown needs real wall-clock time to elapse regardless
+    // of page/element state.
+    public bool IsDisplayed(int maxRetries = 2)
+    {
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            if (IsAkamaiChallengePage())
+            {
+                LogManager.Logger.Warning(
+                    "Akamai challenge page detected, waiting 5s before refresh (attempt {Attempt}/{Max})",
+                    attempt + 1, maxRetries);
+                Thread.Sleep(5000);
+                Driver.Navigate().Refresh();
+                continue;
+            }
+
+            try
+            {
+                WaitUtils.WaitForElement(Driver, HospitalCardLocator);
+                return true;
+            }
+            catch (WebDriverTimeoutException)
+            {
+                if (IsAkamaiChallengePage())
+                {
+                    continue; // loop will handle the refresh on the next pass
+                }
+                return false; // genuinely no cards — not an Akamai issue
+            }
+        }
+
+        return false;
+    }
 
     public List<string> GetHospitalNames()
     {
