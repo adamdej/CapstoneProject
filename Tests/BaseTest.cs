@@ -38,8 +38,6 @@ public abstract class BaseTest
         LogManager.Initialise();
         ExtentReportManager.CreateTest(TestContext.CurrentContext.Test.Name);
 
-        var browserToUse = _browser ?? ConfigurationManager.Settings.Browser;
-
         Driver = DriverFactory.Create(
             browserToUse,
             ConfigurationManager.Settings.Headless);
