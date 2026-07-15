@@ -11,4 +11,5 @@
     public string LogDirectory { get; set; } = "artifacts/logs";
     public bool UseGrid { get; set; } = false;
     public string GridHubUrl { get; set; } = string.Empty;
+    public string ResultsDirectory { get; set; } = "artifacts/results";
 }

@@ -9,4 +9,5 @@ public class HospitalSearchCriteria
     public double MinRating { get; set; }
     public double MaxRating { get; set; }
     public bool RequireOpen24Hours { get; set; }
+    public bool RequireParking { get; set; }
 }

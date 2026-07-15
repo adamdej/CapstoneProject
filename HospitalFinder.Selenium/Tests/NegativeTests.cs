@@ -18,8 +18,9 @@ public class NegativeTests : BaseTest
             "Expected hospital listing cards to be visible for the requested city.");
 
         var hospitalNames = resultsPage.GetFilteredHospitalNames(
-            criteria.MaxRating,
-            criteria.RequireOpen24Hours);
+            criteria.MinRating,
+            criteria.RequireOpen24Hours,
+            criteria.RequireParking);
 
         Assert.That(hospitalNames, Is.Empty,
             $"Expected no hospitals in {criteria.City} with rating < "

@@ -2,62 +2,21 @@
 
 public class SearchResultsPage : BasePage
 {
-    // Confirmed via DevTools inspection of https://www.practo.com/bangalore/hospitals
     private By HospitalCardLocator => By.CssSelector(".c-estb-card");
     private By NameLocator => By.CssSelector("h2.line-1");
+    private By NameLinkLocator => By.XPath(".//a[h2[@class='line-1']]");
     private By RatingLocator => By.CssSelector(".c-feedback .u-bold");
     private By StatusLocator => By.CssSelector(".line-4 span");
+    private By ReadMoreInfoLocator => By.CssSelector("[data-qa-id='read_more_info']");
+    private By AmenityItemLocator => By.CssSelector("[data-qa-id='amenities_list'] [data-qa-id='amenity_item']");
 
     public SearchResultsPage(IWebDriver driver) : base(driver) { }
 
-    // Detects Akamai's bot-management challenge page specifically, as opposed
-    // to the real page just still loading. Akamai's own page text says "If
-    // this page doesn't refresh automatically, resubmit your request" — this
-    // method follows that instruction programmatically rather than attempting
-    // to bypass the check itself.
-    private bool IsAkamaiChallengePage()
+    public bool IsDisplayed() => WaitUtils.WaitForElement(Driver, HospitalCardLocator) != null;
+
+    public bool HasNoHospitalCards()
     {
-        return Driver.PageSource.Contains("Processing your request")
-            || Driver.PageSource.Contains("resubmit your request");
-    }
-
-    public bool IsDisplayed(int maxRetries = 2)
-    {
-        for (int attempt = 0; attempt <= maxRetries; attempt++)
-        {
-            // Poll for up to ExplicitWaitSeconds, checking every 500ms for
-            // EITHER real content or an Akamai challenge — rather than waiting
-            // the full timeout blindly and only checking Akamai afterward.
-            var deadline = DateTime.UtcNow.AddSeconds(ConfigurationManager.Settings.ExplicitWaitSeconds);
-
-            while (DateTime.UtcNow < deadline)
-            {
-                if (Driver.FindElements(HospitalCardLocator).Count > 0)
-                {
-                    return true;
-                }
-
-                if (IsAkamaiChallengePage())
-                {
-                    LogManager.Logger.Warning(
-                        "Akamai challenge page detected, waiting 5s before refresh (attempt {Attempt}/{Max})",
-                        attempt + 1, maxRetries);
-                    Thread.Sleep(5000);
-                    Driver.Navigate().Refresh();
-                    break; // exit polling loop, go to next outer attempt
-                }
-
-                Thread.Sleep(500);
-            }
-        }
-
-        var frameCount = Driver.FindElements(By.TagName("iframe")).Count;
-        var sourceSnippet = Driver.PageSource.Length > 500 ? Driver.PageSource.Substring(0, 500) : Driver.PageSource;
-        LogManager.Logger.Warning("DIAGNOSTIC: iframe count = {FrameCount}. PageSource length = {Length}. First 500 chars: {Snippet}",
-            frameCount, Driver.PageSource.Length, sourceSnippet);
-
-
-        return false;
+        return !Driver.FindElements(HospitalCardLocator).Any();
     }
 
     public List<string> GetHospitalNames()
@@ -81,23 +40,70 @@ public class SearchResultsPage : BasePage
         ).ToList();
     }
 
-    // NOTE: Parking facility is NOT exposed anywhere in Practo's hospital listing data
-    // (confirmed via full-card DOM inspection). This method filters by rating and
-    // 24x7 status only.
-    public List<string> GetFilteredHospitalNames(double minRating, bool requireOpen24Hours)
-    {
-        var cards = GetCards();
-        var results = new List<string>();
+    // Represents one hospital card's data, captured BEFORE we navigate away
+    // to check individual detail pages for parking.
+    private record HospitalCandidate(string Name, double Rating, bool IsOpen24Hours, string DetailUrl);
 
-        foreach (var card in cards)
+    private List<HospitalCandidate> GetHospitalCandidates()
+    {
+        return GetCards().Select(card =>
         {
+            var name = card.FindElement(NameLocator).Text.Trim();
+
             var ratingText = card.FindElement(RatingLocator).Text.Trim();
             var rating = double.TryParse(ratingText, out var r) ? r : 0.0;
+
             var isOpen24Hours = card.FindElements(StatusLocator).Any(e => e.Text.Contains("Open 24x7"));
 
-            if (rating > minRating && (!requireOpen24Hours || isOpen24Hours))
+            var relativeHref = card.FindElement(NameLinkLocator).GetAttribute("href");
+
+            return new HospitalCandidate(name, rating, isOpen24Hours, relativeHref);
+        }).ToList();
+    }
+
+    // Checks a single hospital's detail page for a "Parking" amenity.
+    // Navigates the CURRENT tab directly to the detail URL (rather than
+    // clicking the card, which opens target="_blank") since we already
+    // have the href captured — no need to juggle multiple windows here.
+    private bool HasParkingAmenity(string detailUrl)
+    {
+        Driver.Navigate().GoToUrl(detailUrl);
+
+        var readMoreButton = WaitUtils.WaitForElement(Driver, ReadMoreInfoLocator);
+        ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].scrollIntoView({block: 'center'});", readMoreButton);
+
+        // A cookie-consent overlay (class="fc-dialog-overlay") intermittently
+        // intercepts native clicks on Chrome/Edge, though not observed on Firefox.
+        // A JS-triggered click bypasses Selenium's overlap check, same pattern
+        // used earlier for the "Book Hospital Visit" button.
+        ((IJavaScriptExecutor)Driver).ExecuteScript("arguments[0].click();", readMoreButton);
+
+        WaitUtils.WaitForElement(Driver, AmenityItemLocator);
+        var amenities = Driver.FindElements(AmenityItemLocator);
+
+        return amenities.Any(a => a.Text.Trim().Equals("Parking", StringComparison.OrdinalIgnoreCase));
+    }
+
+    // Filters by rating, 24x7 status, AND parking availability (checked via
+    // each hospital's individual detail page — Practo does not expose
+    // parking data on the listing cards themselves).
+    public List<string> GetFilteredHospitalNames(double minRating, bool requireOpen24Hours, bool requireParking)
+    {
+        var candidates = GetHospitalCandidates()
+            .Where(c => c.Rating > minRating && (!requireOpen24Hours || c.IsOpen24Hours))
+            .ToList();
+
+        if (!requireParking)
+        {
+            return candidates.Select(c => c.Name).ToList();
+        }
+
+        var results = new List<string>();
+        foreach (var candidate in candidates)
+        {
+            if (HasParkingAmenity(candidate.DetailUrl))
             {
-                results.Add(card.FindElement(NameLocator).Text.Trim());
+                results.Add(candidate.Name);
             }
         }
 
@@ -108,15 +114,6 @@ public class SearchResultsPage : BasePage
     {
         Driver.Navigate().GoToUrl(ConfigurationManager.Settings.BaseUrl);
         return new HomePage(Driver);
-    }
-
-    // Returns true if no hospital cards are present — used for negative tests
-    // (e.g. invalid city) where the page loads but returns zero results.
-    // Uses FindElements (plural) rather than WaitForElement, since FindElements
-    // returns an empty list instead of throwing when nothing matches.
-    public bool HasNoHospitalCards()
-    {
-        return !Driver.FindElements(HospitalCardLocator).Any();
     }
 
     private IReadOnlyList<IWebElement> GetCards()

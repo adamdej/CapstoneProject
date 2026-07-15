@@ -24,7 +24,8 @@ public class HospitalSearchTests : BaseTest
 
         var hospitalNames = resultsPage.GetFilteredHospitalNames(
             criteria.MinRating,
-            criteria.RequireOpen24Hours);
+            criteria.RequireOpen24Hours,
+            criteria.RequireParking);
 
         Assert.That(hospitalNames, Is.Not.Empty,
             $"Expected at least one hospital in {criteria.City} with rating > "
@@ -40,10 +41,14 @@ public class HospitalSearchTests : BaseTest
             TestContext.Out.WriteLine($"- {name}");
         }
 
-        // NOTE: The case study also asks to filter by "parking facility". This was
-        // investigated via full DOM inspection of the hospital listing cards and
-        // confirmed NOT to be exposed as data anywhere on Practo's hospital pages.
-        // This is a documented scope limitation, not an oversight.
+        var resultsFilePath = ResultsWriter.WriteHospitalResults(hospitalNames, TestContext.CurrentContext.Test.Name);
+        LogManager.Logger.Information("Hospital results written to {Path}", resultsFilePath);
+
+        // Parking is not exposed on the hospital LISTING page, but IS available on
+        // each hospital's individual detail page under Amenities (behind a "Read
+        // more info" expand action). GetFilteredHospitalNames checks parking only
+        // for candidates that already pass the rating/24x7 filter, to avoid
+        // visiting all ~1,495 Bangalore hospitals individually.
     }
 
     [Test]
