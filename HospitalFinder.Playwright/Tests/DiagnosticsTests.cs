@@ -2,6 +2,11 @@
 
 public class DiagnosticsTests : BaseTest
 {
+    // Scrapes Practo's Diagnostics page "TOP CITIES" modal into a List<string>.
+    // This page is subject to the same intermittent Akamai bot-management
+    // blocking observed throughout the Selenium suite — confirmed here as a
+    // site-level characteristic, not something specific to either framework.
+
     [Test]
     public async Task DiagnosticsPage_TopCities_ReturnsExpectedCityList()
     {
