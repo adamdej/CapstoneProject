@@ -1,0 +1,14 @@
+{
+  "TestData": {
+    "Diagnostics": {
+      "ExpectedTopCityCount": 8,
+      "ExpectedCities": [ "Bangalore", "Delhi", "Mumbai" ]
+    },
+    "CorporateWellnessForm": {
+      "InvalidContactNumber": "0779282103",
+      "ValidContactNumber": "8779282103",
+      "InvalidEmail": "notanemail",
+      "ValidEmail": "test@example.com"
+    }
+  }
+}
