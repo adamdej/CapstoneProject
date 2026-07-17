@@ -69,7 +69,7 @@ public class CorporateWellnessTests : BaseTest
     // Verifies organizationName follows the same touch-then-empty validation
     // pattern as name.
     [Test]
-    public async Task CorporateWellnessForm_EmptyOrganizationName_ShoeErrorandDisablesSubmit()
+    public async Task CorporateWellnessForm_EmptyOrganizationName_ShowsErrorandDisablesSubmit()
     {
         await Page.GotoAsync("https://www.practo.com/plus/corporate");
         var corporatePage = new CorporateWellnessPage(Page);
