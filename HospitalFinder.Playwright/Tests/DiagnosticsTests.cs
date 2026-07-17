@@ -20,12 +20,17 @@ public class DiagnosticsTests : BaseTest
 
         LogManager.Logger.Information("Top cities found: {Cities}", string.Join(", ", cities));
 
+        var expected = TestDataManager.Data.Diagnostics;
+
         Assert.Multiple(() =>
         {
-            Assert.That(cities, Has.Count.EqualTo(8), "Expected exactly 8 top cities.");
-            Assert.That(cities, Does.Contain("Bangalore"));
-            Assert.That(cities, Does.Contain("Delhi"));
-            Assert.That(cities, Does.Contain("Mumbai"));
+            Assert.That(cities, Has.Count.EqualTo(expected.ExpectedTopCityCount),
+                $"Expected exactly {expected.ExpectedTopCityCount} top cities.");
+
+            foreach (var city in expected.ExpectedCities)
+            {
+                Assert.That(cities, Does.Contain(city));
+            }
         });
     }
 }
