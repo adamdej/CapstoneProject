@@ -58,6 +58,12 @@ public class CorporateWellnessPage
 
     public Task TypeThenClearNameAsync() =>
         TypeThenClearFieldAsync(NameInput, OrganizationNameInput);
+    public Task TypeThenClearOrganizationNameAsync() =>
+        TypeThenClearFieldAsync(OrganizationNameInput, NameInput);
 
     public Task<bool> IsNameInvalidAsync() => HasErrorClassAsync(NameInput);
+    public Task<bool> IsOrganizationNameInvalidAsync() => HasErrorClassAsync(OrganizationNameInput);
+
+
+
 }

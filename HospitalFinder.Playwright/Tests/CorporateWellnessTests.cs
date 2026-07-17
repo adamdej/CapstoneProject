@@ -44,6 +44,10 @@ public class CorporateWellnessTests : BaseTest
         LogManager.Logger.Information("Confirmed invalid email address keeps field marked invalid and submit disabled");
     }
 
+    // Verifies the name field uses "touch then leave empty" validation rather
+    // than validating on page load — an empty field only becomes marked invalid
+    // once the user has interacted with it (typed and cleared), confirmed via
+    // manual investigation before writing this test.
     [Test]
     public async Task CorporateWellnessForm_EmptyName_ShowsErrorAndDisablesSubmit()
     {
@@ -59,5 +63,24 @@ public class CorporateWellnessTests : BaseTest
                 "Expected the submit button to remain disabled when the name field is empty.");
         });
         LogManager.Logger.Information("Confirmed empty name field keeps field marked invalid and submit disabled");
+    }
+
+
+    // Verifies organizationName follows the same touch-then-empty validation
+    // pattern as name.
+    [Test]
+    public async Task CorporateWellnessForm_EmptyOrganizationName_ShoeErrorandDisablesSubmit()
+    {
+        await Page.GotoAsync("https://www.practo.com/plus/corporate");
+        var corporatePage = new CorporateWellnessPage(Page);
+        await corporatePage.TypeThenClearOrganizationNameAsync();
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await corporatePage.IsOrganizationNameInvalidAsync(), Is.True,
+                "Expected the organization name field to be marked invalid when left empty.");
+            Assert.That(await corporatePage.IsSubmitButtonDisabledAsync(), Is.True,
+                "Expected the submit button to remain disabled when the organization name field is empty.");
+        });
+        LogManager.Logger.Information("Confirmed empty organization name field keeps submit disabled");
     }
 }
