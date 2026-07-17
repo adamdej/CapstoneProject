@@ -24,6 +24,9 @@ public class CorporateWellnessTests : BaseTest
         LogManager.Logger.Information("Confirmed invalid contact number keeps field marked invalid and submit disabled");
     }
 
+    // Verifies the email field follows the same inline-validation pattern as
+    // contact number: invalid format triggers the error class and keeps the
+    // submit button disabled.
     [Test]
     public async Task CorporateWellnessForm_InvalidEmailAddress_ShowsErrorAndDisablesSubmit()
     {
@@ -39,5 +42,22 @@ public class CorporateWellnessTests : BaseTest
                 "Expected the submit button to remain disabled while the form has invalid data.");
         });
         LogManager.Logger.Information("Confirmed invalid email address keeps field marked invalid and submit disabled");
+    }
+
+    [Test]
+    public async Task CorporateWellnessForm_EmptyName_ShowsErrorAndDisablesSubmit()
+    {
+        await Page.GotoAsync("https://www.practo.com/plus/corporate");
+        var corporatePage = new CorporateWellnessPage(Page);
+        await corporatePage.TypeThenClearNameAsync();
+        Assert.Multiple(async () =>
+        {
+            Assert.That(await corporatePage.IsNameInvalidAsync(), Is.True,
+            "Expected the name field to be marked invalid when left empty after being touched.");
+
+            Assert.That(await corporatePage.IsSubmitButtonDisabledAsync(), Is.True,
+                "Expected the submit button to remain disabled when the name field is empty.");
+        });
+        LogManager.Logger.Information("Confirmed empty name field keeps field marked invalid and submit disabled");
     }
 }

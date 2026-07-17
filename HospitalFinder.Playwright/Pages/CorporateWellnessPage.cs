@@ -48,4 +48,16 @@ public class CorporateWellnessPage
     {
         return await ScheduleDemoButton.IsDisabledAsync();
     }
+
+    public async Task TypeThenClearFieldAsync(ILocator field, ILocator blurTarget)
+    {
+        await field.FillAsync("a");
+        await field.FillAsync("");
+        await blurTarget.ClickAsync();
+    }
+
+    public Task TypeThenClearNameAsync() =>
+        TypeThenClearFieldAsync(NameInput, OrganizationNameInput);
+
+    public Task<bool> IsNameInvalidAsync() => HasErrorClassAsync(NameInput);
 }
