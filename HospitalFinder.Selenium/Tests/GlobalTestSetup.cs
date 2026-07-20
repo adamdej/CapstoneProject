@@ -11,6 +11,7 @@ public class GlobalTestSetup
     [OneTimeSetUp]
     public void GlobalSetUp()
     {
+        Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "artifacts"));
         ExtentReportManager.Initialise();
     }
 
