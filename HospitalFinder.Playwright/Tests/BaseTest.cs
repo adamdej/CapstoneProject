@@ -17,7 +17,7 @@ public abstract class BaseTest : PageTest
         LogManager.Initialise();
         ExtentReportManager.CreateTest(TestContext.CurrentContext.Test.Name);
 
-        await Page.GotoAsync(ConfigurationManager.Settings.BaseUrl);
+        await Page.GotoAsync(ConfigurationManager.Settings.BaseUrl, new PageGotoOptions { Timeout = 60000 });
 
         LogManager.Logger.Information("Browser launched and navigated to {Url}",
             ConfigurationManager.Settings.BaseUrl);
