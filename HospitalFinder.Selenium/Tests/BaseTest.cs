@@ -10,7 +10,7 @@ using Allure.NUnit;
 public abstract class BaseTest
 {
     protected IWebDriver? Driver;
-    private readonly string? _browser;
+    protected readonly string? Browser;
 
     // Default constructor: used by test classes that DON'T specify [TestFixture("browser")]
     // — these fall back to whatever "Browser" is set to in appsettings.json, same as before.
@@ -23,13 +23,13 @@ public abstract class BaseTest
     // all of them concurrently.
     protected BaseTest(string browser)
     {
-        _browser = browser;
+        Browser = browser;
     }
 
     [SetUp]
     public void SetUp()
     {
-        var browserToUse = _browser ?? ConfigurationManager.Settings.Browser;
+        var browserToUse = Browser ?? ConfigurationManager.Settings.Browser;
 
         if (!ConfigurationManager.Settings.UseGrid && browserToUse.ToLowerInvariant() != "chrome")
         {

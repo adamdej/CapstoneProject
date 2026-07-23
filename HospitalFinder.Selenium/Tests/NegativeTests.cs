@@ -18,7 +18,7 @@ public class NegativeTests : BaseTest
             "Expected hospital listing cards to be visible for the requested city.");
 
         var hospitalNames = resultsPage.GetFilteredHospitalNames(
-            criteria.MinRating,
+            criteria.MaxRating,
             criteria.RequireOpen24Hours,
             criteria.RequireParking);
 

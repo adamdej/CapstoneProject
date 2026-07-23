@@ -121,4 +121,42 @@ public class SearchResultsPage : BasePage
         WaitUtils.WaitForElement(Driver, HospitalCardLocator);
         return Driver.FindElements(HospitalCardLocator);
     }
+
+    public bool IsDisplayed(int maxRetries = 2)
+    {
+        for (int attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+
+            while (DateTime.UtcNow < deadline)
+            {
+                if (Driver.FindElements(HospitalCardLocator).Count > 0)
+                {
+                    return true;
+                }
+
+                if (IsAkamaiChallengePage())
+                {
+                    Thread.Sleep(5000);
+                    Driver.Navigate().Refresh();
+                    break;
+                }
+
+                Thread.Sleep(500);
+            }
+        }
+
+        return false;
+    }
+
+    // Detects Akamai's bot-management challenge — either the soft, timed
+    // countdown page, or the harder "Challenge Validation" tier seen from
+    // data-center/CI networks.
+    private bool IsAkamaiChallengePage()
+    {
+        return Driver.PageSource.Contains("Processing your request")
+            || Driver.PageSource.Contains("resubmit your request")
+            || Driver.Title.Contains("Challenge Validation");
+    }
 }
+
